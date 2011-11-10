@@ -1,8 +1,35 @@
 (use-package :cl-ppcre)
 
+
 (defvar *grade-table* (make-hash-table :test #'equal))
+(defstruct fullname
+  (first "NONAME" :type string :read-only t)
+  (last  "NONAME" :type string :read-only t))
+
+(defstruct lab-grade
+  (lab1  0.0 :type short-float)
+  (lab2  0.0 :type short-float)
+  (lab3  0.0 :type short-float)
+  (lab4  0.0 :type short-float)
+  (lab5  0.0 :type short-float)
+  (lab6  0.0 :type short-float)
+  (lab7  0.0 :type short-float)
+  (lab8  0.0 :type short-float)
+  (lab9  0.0 :type short-float)
+  (lab10 0.0 :type short-float))
+
+(defstruct student
+  (name  (make-fullname)  :type fullname)
+  (grade (make-lab-grade) :type lab-grade)
+  (gid   0                :type integer)
+  (email ""               :type string))
+
 (defvar *fname-lut* (make-hash-table :test #'equal))
 (defvar *lname-lut* (make-hash-table :test #'equal))
+(defstruct lookup-entry
+  (groups   nil :type list)
+  (students nil :type list))
+
 (defvar *group-table* (make-hash-table :test #'equal))
 
 (defun test-reset (&key (dump nil))
@@ -19,8 +46,8 @@
           ("Edward,Munoz III" "Guillermo,Garcia Jr")
           ("Bryan,Johnson" "Taylor,Sanchez" "Diego,Bernal")
           ("Johnny,Nguyen" "David,Smit" "Jonathan,Carranza")
-          ("Manuel,Del Rio" "Christina,Torres")
-          ("Andrew,Davis" "Eugene,Chandler")
+          ;; ("Manuel,Del Rio" "Christina,Torres")
+          ;; ("Andrew,Davis" "Eugene,Chandler")
           ("Maurice,Njuguna" "Mac,Chou")
           ("Paul,Cummings" "Gustavo,Cruz")
           ("La,Van Doren Jr" "Darin,Truckenmiller")
@@ -40,9 +67,12 @@
           ("Joey,Cantellano" "Abraham,Flores Jr")))
   (if dump (print-grade-table)))
 
+(defmacro mk-symbol (format sym)
+  `(read-from-string (format nil ,format ,sym)))
+
 (defun dump-table (table)
   (maphash #'(lambda (key value)
-               (format t "~d : ~d~%" key value))
+               (format t "~16a : ~a~%" key value))
            table))
 
 (defun dump-grade-csv ()
@@ -56,26 +86,28 @@
            *grade-table*))
 
 (defun print-grade-table ()
-  (maphash #'(lambda (key value)
-               (format t "~10a ~16a ~5a"
-                       (string-upcase (getf key :firstname) :start 0 :end 1)
-                       (string-upcase (getf key :lastname) :start 0 :end 1)
-                       (getf value :group-id))
-               (loop for (key value) on (getf value :lab-grade) :by #'cddr
-                    do (format t " ~3d" value))
+  (maphash #'(lambda (name value)
+               (format t "~10a ~16a ~3d |"
+                       (string-upcase (getf name :firstname) :start 0 :end 1)
+                       (string-upcase (getf name :lastname)  :start 0 :end 1)
+                       (student-gid value))
+               (let ((grade (student-grade value)))
+                 (loop for i from 1 to 10 do
+                      (format t " ~4,1f"
+                              (funcall (read-from-string (format nil "lab-grade-lab~d" i)) grade))))
                (format t "~%"))
            *grade-table*))
 
-(defmacro display-name (fullname)
-  `(let ((name ,fullname))
+(defmacro display-name (name)
+  `(let ((name ,name))
      (concatenate 'string
                   (string-upcase (getf name :firstname) :start 0 :end 1)
                   " "
                   (string-upcase (getf name :lastname)  :start 0 :end 1))))
 
-(defmacro proc-name (fullname)
-  `(list :firstname (string-downcase (getf ,fullname :firstname))
-         :lastname  (string-downcase (getf ,fullname :lastname))))
+(defmacro proc-name (name-str)
+  `(list :firstname (string-downcase (getf ,name-str :firstname))
+         :lastname  (string-downcase (getf ,name-str :lastname))))
 
 (defmacro intersection* (lists)
   `(let ((lists  (cdr ,lists))
@@ -90,7 +122,9 @@
        (push value ,field))))
 
 (defmacro list-group-members (id)
-  `(let ((name-list (getf (gethash ,id *group-table*) :members)))
+  `(let ((name-list (if (gethash ,id *group-table*)
+                        (group-members (gethash ,id *group-table*))
+                        nil)))
      (loop for name in name-list do
           (format t "  ~a~%" (display-name name)))))
 
@@ -127,45 +161,76 @@
                  finally (setq titles t))
               (let* ((firstname (string-downcase (elt token-list firstname-index)))
                      (lastname  (string-downcase (elt token-list lastname-index)))
-                     (email     (elt token-list email-index))
-                     (fullname  (list :firstname firstname :lastname lastname)))
+                     (student (make-student
+                               :name (make-fullname :first firstname :last  lastname)
+                               :grade (make-lab-grade)
+                               :email (elt token-list email-index)))
+                     (std-name (list :firstname firstname :lastname lastname)))
 
-                (symbol-macrolet ((table-entry  (gethash fullname  *grade-table*))
-                                  (lname-entry  (getf (gethash lastname  *lname-lut*) :fullname))
-                                  (fname-entry  (getf (gethash firstname *fname-lut*) :fullname)))
-                  (setf (getf table-entry :lab-grade) (list :lab1  0
-                                                            :lab2  0
-                                                            :lab3  0
-                                                            :lab4  0
-                                                            :lab5  0
-                                                            :lab6  0
-                                                            :lab7  0
-                                                            :lab8  0
-                                                            :lab9  0
-                                                            :lab10 0))
-                  (setf (getf table-entry :email) email)
-                  (if (not (position fullname lname-entry :test #'equal)) (push fullname lname-entry))
-                  (if (not (position fullname fname-entry :test #'equal)) (push fullname fname-entry))
-                  ;; (format t "~a, ~a : ~a~%" firstname lastname email)
-                  ))))))))
+                (symbol-macrolet ((grade-table (gethash std-name  *grade-table*))
+                                  (lname-lut   (gethash lastname  *lname-lut*))
+                                  (fname-lut   (gethash firstname *fname-lut*)))
+                  (unless grade-table (setf grade-table student))
+                  (macrolet ((set-table-entry (sym)
+                               (let ((entry (mk-symbol "~a-lut" sym)))
+                                 `(if (not ,entry)
+                                      (setf ,entry (make-lookup-entry
+                                                    :groups   (list 0)
+                                                    :students (list std-name)))
+                                      (unless (position std-name (lookup-entry-students ,entry))
+                                        (push std-name (lookup-entry-students ,entry))
+                                        (push 0 (lookup-entry-groups ,entry)))))))
+                    (set-table-entry lname)
+                    (set-table-entry fname))
+                  (push std-name (getf (gethash 0 *group-table*) :members))))))))))
+
+(defun set-grade (grade-list &key (firstname nil) (lastname nil))
+  (macrolet ((set-grade (name)
+               `(let* ((std-name ,name))
+                  (symbol-macrolet ((grade (student-grade (gethash std-name *grade-table*))))
+                    (if (gethash std-name *grade-table*)
+                        (loop for lab in grade-list
+                           do (funcall (fdefinition (list 'setf (mk-symbol "lab-grade-~a" (first lab))))
+                                       (float (second lab)) grade))
+                        (format t "Cannot find student : ~a~%" (display-name std-name))))))
+             (set-grade-name (name table)
+               `(let* ((std-name ,name)
+                       (match (if (gethash std-name ,table)
+                                  (lookup-entry-students (gethash std-name ,table))
+                                  nil)))
+                  (if match
+                      (if (= (length match) 1)
+                          (set-grade (first match))
+                          (set-grade (select match
+                                             #'(lambda (ith name)
+                                                 (format *query-io* "~d : ~a~%"
+                                                         ith (display-name name))))))
+                      (format t "Cannot find student : ~a~%" std-name)))))
+    (cond ((and firstname lastname)
+           (set-grade (list :firstname firstname :lastname lastname)))
+          (firstname (set-grade-name (string-downcase firstname) *fname-lut*))
+          (lastname  (set-grade-name (string-downcase lastname)  *lname-lut*))
+          (t (format t "No name is given.~%")))))
 
 (defun mk-group (name-list)
   (let ((group-members nil))
     (loop for name in name-list
        do
          (let* ((token-list (cl-ppcre:split "\\s*,\\s*" name))
-                (fullname (list :firstname (string-downcase (pop token-list))
+                (std-name (list :firstname (string-downcase (pop token-list))
                                 :lastname  (string-downcase (pop token-list)))))
            ;; (format t "~a ~a~%" (getf fullname :firstname) (getf fullname :lastname))
-           (symbol-macrolet ((group-id (getf (gethash fullname *grade-table*) :group-id)))
-             (if group-id
+           (symbol-macrolet ((group-id (if (gethash std-name *grade-table*)
+                                           (student-gid (gethash std-name *grade-table*))
+                                           nil)))
+             (if (and group-id (not (equal group-id 0)))
                  (progn
                    (format t "** ~a is already in group ~d: **~%" name group-id)
                    (list-group-members group-id)
                    (format t "~%")
                    (return nil))
-                 (if (gethash fullname *grade-table*)
-                     (push fullname group-members)
+                 (if (gethash std-name *grade-table*)
+                     (push std-name group-members)
                      (progn
                        (format t "** ~a is not found in roster. **~%" name)
                        (return nil))))))
@@ -175,31 +240,50 @@
                         (id (funcall id-generator)))
                    (loop while (gethash id *group-table*) do
                         (setq id (funcall id-generator)))
-                   (setf (getf (gethash id *group-table*) :members) group-members)
+                   ;; (setf (getf (gethash id *group-table*) :members) group-members)
                    (loop for name in group-members do
-                        (setf (getf (gethash name *grade-table*) :group-id) id)
-                        (macrolet ((push-id (nametag table)
-                                     `(unless (position name (getf (gethash (getf name ,nametag) ,table) :fullname))
-                                       (push id (getf (gethash (getf name ,nametag) ,table) :group-id)))))
-                          (push-id :firstname *fname-lut*)
-                          (push-id :lastname  *lname-lut*))))))))
+                        (add-to-group id name)))))))
 
-(defun add-to-group (group-id fullname &key (parse nil))
-  (let ((student (if parse (proc-name fullname) fullname)))
-    (symbol-macrolet ((record  (gethash student *grade-table*))
-                      (curr-id (getf (gethash student *grade-table*) :group-id))
+(defun add-to-group (group-id name &key (parse nil))
+  (let ((std-name (if parse (proc-name name) name)))
+    (symbol-macrolet ((record  (gethash std-name *grade-table*))
                       (group-members (getf (gethash group-id *group-table*) :members)))
       (if (not record)
-          (format t "** Failed. Cannot find record for ~a. **~%" (display-name student))
-          (if curr-id
-              (if (/= group-id curr-id)
-                  (format t "** Failed. ~a is already in group ~d. **~%" (display-name student) group-id)
-                  (format t "** ~a is already in this group. **~%" (display-name student)))
-              (progn
-                (setf curr-id group-idd)
-                (push group-id (getf (gethash (getf student :firstname) *fname-lut*) :group-id))
-                (push group-id (getf (gethash (getf student :lastname) *lname-lut*) :group-id))
-                (push student group-members)))))))
+          (format t "** Failed. Cannot find record for ~a. **~%" (display-name std-name))
+          (if (/= (student-gid record) 0)
+              (if (/= group-id (student-gid record))
+                  (format t "** Failed. ~a is already in group ~d. **~%" (display-name std-name) group-id)
+                  (format t "** ~a is already in this group. **~%" (display-name std-name)))
+              (macrolet ((set-gid-entry (tag table)
+                           `(setf (elt (lookup-entry-groups (gethash (getf std-name ,tag) ,table))
+                                       (position std-name
+                                                 (lookup-entry-students
+                                                  (gethash (getf std-name ,tag) ,table))
+                                                 :test #'equal))
+                                  group-id)))
+                (setf (student-gid record) group-id)
+                (set-gid-entry :firstname *fname-lut*)
+                (set-gid-entry :lastname *lname-lut*)
+                (push std-name group-members)))))))
+
+(defun remove-from-group (group-id name &key (parse nil))
+  (let ((std-name (if parse (proc-name name) name)))
+    
+    (symbol-macrolet ((record             (gethash std-name *grade-table*) )
+                      (member-list        (getf (gethash group-id *group-table*) :members)))
+      (if (/= (student-gid record) group-id)
+          (format t "** ~a does not belongs to this group. **~%" (display-name std-name))
+          (macrolet  ((set-gid-entry (tag table)
+                        `(setf (elt (lookup-entry-groups (gethash (getf std-name ,tag) ,table))
+                                    (position std-name
+                                              (lookup-entry-students
+                                               (gethash (getf std-name ,tag) ,table))
+                                              :test #'equal))
+                               0)))
+            (setf (student-gid record) 0)
+            (set-gid-entry :firstname *fname-lut*)
+            (set-gid-entry :lastname *lname-lut*)
+            (setf member-list (delete std-name member-list :test #'equal)))))))
 
 (defun add-students-to-group (group-id name-list)
   (mapc #'(lambda (name)
@@ -217,29 +301,20 @@
 (defun short-name-lookup (name-list &key ())
   )
 
-(defun remove-from-group (group-id fullname &key (parse nil))
-  (let ((student (if parse (proc-name fullname) fullname)))
-    
-    (symbol-macrolet ((curr-id            (getf (gethash student *grade-table*) :group-id))
-                      (member-list        (getf (gethash group-id *group-table*) :members))
-                      (firstname-group-id (getf (gethash (getf student :firstname) *fname-lut*) :group-id))
-                      (lastname-group-id  (getf (gethash (getf student :lastname) *lname-lut*) :group-id)))
-      (if (/= curr-id group-id)
-          (format t "** ~a does not belongs to this group. **~%" (display-name student))
-          (progn
-            (setf curr-id nil)
-            (setf firstname-group-id (delete group-id firstname-group-id))
-            (setf lastname-group-id (delete group-id lastname-group-id))
-            (setf member-list (delete student member-list :test #'equal)))))))
 
-(defun change-group (group-id fullname &key (parse nil))
-  (let ((student (if parse (proc-name fullname) fullname)))
-    (symbol-macrolet ((curr-id (getf (gethash student *grade-table*) :group-id)))
-      (if (= curr-id group-id)
-          (format t "** ~a is already in this group. **~%" (display-name student))
-          (progn
-            (remove-from-group curr-id student)
-            (add-to-group group-id student))))))
+
+(defun change-group (group-id name &key (parse nil))
+  (let* ((std-name (if parse (proc-name name) name))
+         (curr-id (if (gethash std-name *grade-table*)
+                      (student-gid (gethash std-name *grade-table*))
+                      nil)))
+    (if (equal curr-id group-id)
+          (format t "** ~a is already in this group. **~%" (display-name std-name))
+          (if curr-id
+              (progn
+                (remove-from-group curr-id std-name)
+                (add-to-group group-id std-name))
+              (format t "** ~a is not in roster. **~%" (display-name std-name)))))))
 
 (defun select (selections display)
   (let* ((len-1 (1- (length selections)))
@@ -258,28 +333,6 @@
                (setq choice (elt selections index))))))
     choice))
 
-(defun set-grade (grade-list &key (firstname nil) (lastname nil))
-  (macrolet ((set-grade (name)
-               `(let ((fullname ,name))
-                  (symbol-macrolet ((lab-entry
-                                     (getf (gethash fullname *grade-table*) :lab-grade)))
-                    (loop for lab in grade-list
-                       do (setf (getf lab-entry (first lab)) (second lab))))))
-             (set-grade-name (name table)
-               `(let ((match (getf (gethash ,name ,table) :fullname)))
-                  (if (= (length match) 1)
-                      (set-grade (first match))
-                      (set-grade (select match
-                                         #'(lambda (ith name)
-                                             (format *query-io* "~d : ~a~%"
-                                                     ith (display-name name)))))))))
-    (cond ((and firstname lastname)
-           (set-grade (list :firstname (string-downcase firstname)
-                            :lastname  (string-downcase lastname))))
-          (firstname (set-grade-name (string-downcase firstname) *fname-lut*))
-          (lastname  (set-grade-name (string-downcase lastname)  *lname-lut*))
-          (t (format t "No name is given.~%")))))
-
 (defun set-group-grade (grade-list name-list)
   (let ((groups nil))
     (loop for name in name-list
@@ -287,10 +340,9 @@
          (let* ((name (string-downcase name))
                 (found nil))
            (macrolet ((push-if-found (name table)
-                        `(if (getf (gethash ,name ,table) :group-id)
-                             (progn
-                               (push (getf (gethash name ,table) :group-id) groups)
-                               (setq found t)))))
+                        `(when (gethash ,name ,table)
+                           (push (lookup-entry-groups (gethash ,name ,table)) groups)
+                           (setq found t))))
              (push-if-found name *fname-lut*)
              (push-if-found name *lname-lut*))
            (unless found
@@ -343,5 +395,17 @@
              (m1 (x)
                `(format t "~a, ~a ~%" ,x x)))
     (m2 y x)))
+
+(defmacro set-table-entry (sym)
+  (let ((lut            (mk-symbol "~a-lut" sym))
+        (make-entry     (mk-symbol "make-~a-entry" sym))
+        (entry-students (mk-symbol "~a-entry-students" sym))
+        (entry-groups   (mk-symbol "~a-entry-groups" sym)))
+    `(if (not ,lut)
+         (setf ,lut (,make-entry :groups (list 0)
+                                 :students (list (student-name student))))
+         (unless (position (student-name student) (,entry-students ,lut))
+           (push (student-name student) (,entry-students ,lut))
+           (push 0 (,entry-groups ,lut))))))
 
 (defun import-grade (file))
