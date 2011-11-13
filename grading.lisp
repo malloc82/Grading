@@ -40,31 +40,81 @@
   (setq *group-table* (make-hash-table :test #'equal))
   (import-name-list "~/Downloads/CSE310-01F11_Grades.txt")
   (mapc #'mk-group
-        '(("Jeremiah, Lukacs" "Albert,Banuelos")
-          ("Cory, Cook" "Roman,Ruiz" "Corey,Lunt")
-          ("Douglas,Duncan" "Jessica,Brown")
-          ("Edward,Munoz III" "Guillermo,Garcia Jr")
-          ("Bryan,Johnson" "Taylor,Sanchez" "Diego,Bernal")
-          ("Johnny,Nguyen" "David,Smit" "Jonathan,Carranza")
-          ;; ("Manuel,Del Rio" "Christina,Torres")
-          ;; ("Andrew,Davis" "Eugene,Chandler")
-          ("Maurice,Njuguna" "Mac,Chou")
-          ("Paul,Cummings" "Gustavo,Cruz")
-          ("La,Van Doren Jr" "Darin,Truckenmiller")
-          ("Ran,Wei" "Muhammad,Ali")
+        '(("Jeremiah, Lukacs" "Albert,Banuelos") ;; :lab4 10; :lab5 10; :lab8, bcd finished in lab
+          ("Cory, Cook" "Roman,Ruiz" "Corey,Lunt") ;; :lab4 7, no source & diagram; :lab5 8, missing timing
+          ("Douglas,Duncan" "Jessica,Brown") ;; :lab4 10; :lab5 10; 
+          ("Edward,Munoz III" "Guillermo,Garcia Jr") ;; 
+          ("Bryan,Johnson" "Taylor,Sanchez" "Diego,Bernal") ;;
+          ("Johnny,Nguyen" "David,Smit" "Jonathan,Carranza") ;; 
+          ("Manuel,Del Rio" "Christina,Torres") ;; 
+          ("Andrew,Davis" "Eugene,Chandler") ;; 
+          ("Maurice,Njuguna" "Mac,Chou") ;; lab5 , no source & diagram; 
+          ("Paul,Cummings" "Gustavo,Cruz") ;; lab5, incomplete source
+          ("La,Van Doren Jr" "Darin,Truckenmiller") ;;
+          ("Ran,Wei" "Muhammad,Ali") ;; 
 
-          ("Viviane,Helmig" "Roman,Savilov" "Abigail,Farrier")
-          ("Anthony,Phillips" "Theodore,Phillips II" "Aminul,Hasan")
-          ("Evan,Casey" "Ngan,Do" "Kyle,Johnson")
-          ("Michael,Shabsin" "Nikolay,Figurin")
-          ;; ("Lavern,Slusher Jr" "Michael,Korcha I" "Garrett,Albers")
-          ;; ("Jeffrey,Carter" "Henry,Gomez" "Dennis,Zamora")
-          ("Bryan,Amann" "Sean,Finucane" "Peter,Diaz III")
-          ("Ahmed,Kamel" "Dylan,Allbee" "Ryan,Stegmann")
-          ("Kanika,Bhat" "Francisco,Ron" "Janette,Rodriguez")
-          ("Carlos,Gomez Viramontes" "Ryan,Rady")
-          ("Henry,Johnson" "Dillon,Li" "Michael,Schenk")
-          ("Joey,Cantellano" "Abraham,Flores Jr")))
+          ("Viviane,Helmig" "Roman,Savilov" "Abigail,Farrier") ;; 
+          ("Anthony,Phillips" "Theodore,Phillips II" "Aminul,Hasan") ;; 
+          ("Evan,Casey" "Ngan,Do" "Kyle,Johnson");; 
+          ("Michael,Shabsin" "Nikolay,Figurin") ;; 
+          ("Lavern,Slusher Jr" "Michael,Korcha I" "Garrett,Albers") ;; 
+          ("Jeffrey,Carter" "Henry,Gomez" "Dennis,Zamora") ;; 
+          ("Bryan,Amann" "Sean,Finucane" "Peter,Diaz III") ;; 
+          ("Ahmed,Kamel" "Dylan,Allbee" "Ryan,Stegmann") ;; 
+          ("Kanika,Bhat" "Francisco,Ron" "Janette,Rodriguez") ;;  :lab 8, working
+          ("Carlos,Gomez Viramontes" "Ryan,Rady") ;; 
+          ("Henry,Johnson" "Dillon,Li" "Michael,Schenk") ;; 
+          ("Joey,Cantellano" "Abraham,Flores Jr"))) ;; 
+  
+  (set-group-grade '("jeremiah" "albert")
+                   '((:lab1 6) (:lab4 10) (:lab5 10)))
+  (set-group-grade '("cory" "roman")
+                   '((:lab1 6) (:lab4 7) (:lab5 8)))
+  (set-group-grade '("duncan" "jessica")
+                   '((:lab4 10) (:lab5 10)))
+  (set-group-grade '("edward" "guillermo")
+                   '((:lab1 6) (:lab4 10) (:lab5 10)))
+  (set-group-grade '("bryan" "taylor")
+                   '((:lab1 6) (:lab4 10) (:lab5 10) ))
+  (set-group-grade '("johnny" "david")
+                   '((:lab4 10) (:lab5 10)))
+  (set-group-grade '("manuel" "torres")
+                   '((:lab4 8) (:lab5 10)))
+  (set-group-grade '("andrew" "eugene")
+                   '((:lab4 10) (:lab5 10)))
+  (set-group-grade '("maurice" "chou")
+                   '((:lab1 6) (:lab4 8) (:lab5 5)))
+  (set-group-grade '("paul" "Gustavo")
+                   '((:lab4 10) (:lab5 9)))
+  (set-group-grade '("la" "darin")
+                   '((:lab4 8) (:lab5 10)))
+  (set-group-grade '("ran" "ali")
+                   '((:lab1 5) (:lab4 10) (:lab5 10) ))
+
+  (set-group-grade '("viviane" "roman")
+                   '((:lab5 8) (:lab6 10)))
+  (set-group-grade '("phillips" "hasan")
+                   '((:lab5 8)  (:lab5 8)))
+  (set-group-grade '("evan" "ngan")
+                   '((:lab6 7)  (:lab5 9)))
+  (set-group-grade '("michael" "nikolay")
+                   '((:lab4 6) (:lab5 5) (:lab6 6)))
+  (set-group-grade '("lavern" "michael")
+                   '((:lab5 8) (:lab6 8)))
+  (set-group-grade '("jeffrey" "henry")
+                   '((:lab5 6) (:lab6 7)))
+  (set-group-grade '("bryan" "sean")
+                   '((:lab5 10) (:lab6 10)))
+  (set-group-grade '("ahmed" "dylan")
+                   '((:lab4 8) (:lab5 10) (:lab6 10)))
+  (set-group-grade '("kanika" "ron")
+                   '((:lab5 8) (:lab6 8)))
+  (set-group-grade '("carlos" "ryan")
+                   '((:lab5  10) (:lab6 10)))
+  (set-group-grade '("henry" "dillon")
+                   '((:lab5 10) (:lab6 10)))
+  (set-group-grade '("joey" "abraham")
+                   '((:lab5 8) (:lab6 10)))
   (if dump (print-grade-table)))
 
 (defmacro mk-symbol (format sym)
@@ -333,7 +383,7 @@
                (setq choice (elt selections index))))))
     choice))
 
-(defun set-group-grade (grade-list name-list)
+(defun set-group-grade (name-list grade-list)
   (let ((groups nil))
     (loop for name in name-list
        do
@@ -346,7 +396,7 @@
              (push-if-found name *fname-lut*)
              (push-if-found name *lname-lut*))
            (unless found
-               (format t "~a is not found in roster." (string-upcase name :start 0 :end 1))
+               (format t "** ~a is not found in roster. **~%" (string-upcase name :start 0 :end 1))
                (return nil)))
        finally (let ((matches (intersection* groups)))
                  (if (null matches)
@@ -362,10 +412,51 @@
                                                         do(format *query-io* "   * ~a~%" (display-name name))
                                                         finally (format *query-io* "~%"))))
                                               (first matches))))
-                       (loop for student in (getf (gethash group-id *group-table*) :members) do
-                            (set-grade grade-list
-                                       :firstname (getf student :firstname)
-                                       :lastname  (getf student :lastname)))))))))
+                       (loop for student in (getf (gethash group-id *group-table*) :members)
+                          initially
+                            (format t "Changing grade: ~%")
+                          do
+                            (progn
+                              (set-grade grade-list
+                                         :firstname (getf student :firstname)
+                                         :lastname  (getf student :lastname))
+                              (format t "   * ~a ~%" (display-name student))))))))))
+
+(defun quicksort-fn (lst &key (by #'values) (compare< #'<) (compare> #'>) (compare= #'-))
+  (if (or (null lst)
+          (null (cdr lst)))
+      lst
+      (let ((pivot (funcall by (first lst))))
+        (append (quicksort-fn (remove-if-not #'(lambda (x)
+                                                 (funcall compare< (funcall by x) pivot))
+                                             lst) :by by :compare< compare< :compare> compare>
+                                             :compare= compare=)
+                (remove-if-not #'(lambda (x) (funcall compare= (funcall by x) pivot)) lst)
+                (quicksort-fn (remove-if-not #'(lambda (x)
+                                                 (funcall compare> (funcall by x) pivot))
+                                             lst) :by by :compare< compare< :compare> compare>
+                                             :compare= compare=)))))
+
+
+(defun list-grades (labs)
+  (let ((keys nil))
+    (loop for key being the hash-keys of *grade-table* do
+         (progn
+           ;;(format t "~a~%" (display-name key))
+           (push key keys)))
+    (setq keys (quicksort-fn keys
+                             :by  #'(lambda (name)
+                                      (getf name :firstname))
+                             :compare> #'string>
+                             :compare< #'string<
+                             :compare= #'string=))
+    (loop for key being the elements of keys do
+         (progn
+           (format t "~10a ~16a |" (getf key :firstname) (getf key :lastname))
+           (loop for lab in labs do
+                (format t " ~4,1f" (funcall (mk-symbol "lab-grade-~a" lab)
+                                 (student-grade (gethash key *grade-table*)))))
+           (format t "~%")))))
 
 (defun dump-grade (filename)
   (with-open-file (out filename
