@@ -2,7 +2,7 @@ Thoughts:
 
 - list vs structure:
   list is very flexible, but messy; 
-  - I could change a file or add a field quite easily, at the same time, when I want to know what field
+  - I could change a field or add a field quite easily; at the same time, when I want to know what field
     a particular list has, I will have to look through code.
     This could be made easier to have a function initialize all the fields needed. But then if there is 
     a typo somewhere else, it would be hard to find, cuz there would be no error. This probably could be 
